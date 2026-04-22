@@ -41,13 +41,13 @@ void merge(int vetor[], int inicio, int meio, int fim) {
     while (i < n1 && j < n2) {
         if (esquerda[i] <= direita[j]){ //enquanto tiver elemento nas duas listas irá comparar os menores elementos e colocar o menor no vetor final 
             vetor[k] = esquerda[i];
-            i++
+            i++;
         }
         else{
             vetor[k] = direita[j];
-            j++
+            j++;
         }
-        k++
+        k++;
     }
 
     while (i < n1) { // caso sobre elementos irá copiar na esquerda
@@ -75,5 +75,17 @@ void mergeSort(int vetor[], int inicio, int fim) {
         mergeSort(vetor, meio + 1, fim); // recursao para ficar dividindo o vetor na parte direita
 
         merge(vetor, inicio, meio, fim); //chama o merge para juntar 
+    }
+}
+
+// Wrappers com std::vector para uso no benchmark
+namespace Sort {
+    void bubbleSort(std::vector<int>& arr) {
+        ::bubbleSort(arr.data(), arr.size());
+    }
+
+    void mergeSort(std::vector<int>& arr) {
+        if (arr.empty()) return;
+        ::mergeSort(arr.data(), 0, arr.size() - 1);
     }
 }
