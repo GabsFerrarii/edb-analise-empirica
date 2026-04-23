@@ -1,4 +1,4 @@
-#include "SortAlgorithms.h"
+#include "SortAlgorithms.hpp"
 
 // Bubble Sort
 void bubbleSort(int vetor[], int tamanho) {

@@ -1,6 +1,11 @@
 # Análise Empírica de Complexidade de Algoritmos
 
-Programa em C++ que avalia empiricamente o tempo de execução de algoritmos de busca e ordenação, comparando os dados coletados com funções assintóticas conhecidas para identificar automaticamente a complexidade de cada algoritmo.
+Programa em C++ que avalia empiricamente o tempo de execução de algoritmos de busca e ordenação, comparando os dados com funções assintóticas conhecidas e gerando gráficos automaticamente via integração direta com Python.
+
+## Requisitos
+
+- Compilador com suporte a **C++17** (ex: `g++`)
+- **Python 3** com a biblioteca `matplotlib` instalada.
 
 ## Algoritmos Implementados
 
@@ -26,27 +31,15 @@ Programa em C++ que avalia empiricamente o tempo de execução de algoritmos de 
 |---|---|
 | `main.cpp` | Ponto de entrada, configuração dos tamanhos e chamadas de benchmark |
 | `SearchAlgorithms.hpp/cpp` | Algoritmos de busca (namespace `Search`) |
-| `SortAlgorithms.h/cpp` | Algoritmos de ordenação (namespace `Sort`) |
+| `SortAlgorithms.hpp/cpp` | Algoritmos de ordenação (namespace `Sort`) |
 | `Benchmark.hpp/cpp` | Motor de benchmark — coleta de tempos com `chrono` |
 | `Analysis.hpp/cpp` | Ajuste de funções assintóticas via variância residual log |
+| `Plotter.hpp` | Motor de plotagem em tempo real via Pipe na memória (C++ → Python) |
 
 ## Como Compilar e Executar
 
-Requer `g++` com suporte a C++17.
+No terminal, compile os arquivos usando o `g++` e execute o programa gerado:
 
 ```bash
 g++ -Wall -O2 -std=c++17 main.cpp SearchAlgorithms.cpp SortAlgorithms.cpp Benchmark.cpp Analysis.cpp -o programa
 ./programa
-```
-
-## Adicionando Novos Algoritmos
-
-Basta implementar a função seguindo a assinatura padrão e registrar na `main()`:
-
-```cpp
-// Busca: int func(const std::vector<int>& arr, int target)
-benchmarkSearch("Minha Busca", minhaFuncaoDeBusca);
-
-// Ordenação: void func(std::vector<int>& arr)
-benchmarkSort("Minha Ordenacao", minhaFuncaoDeOrdenacao, TAMANHOS);
-```

@@ -2,6 +2,11 @@
 
 **Disciplina:** Estrutura de Dados Básica  
 **Tema:** Avaliação empírica do tempo de execução de algoritmos de busca e ordenação
+**Repositório:** https://github.com/GabsFerrarii/edb-analise-empirica.git
+**Integrantes:**
+- Gabriel Ferreira Cavalcante
+- Jordson Albino Galvão Tavares
+- Renan Balbino de Medeiros
 
 ---
 
@@ -34,56 +39,34 @@ As principais classes de complexidade avaliadas neste trabalho são:
 | $O(n^2)$ | Quadrática | Cresce rapidamente. Dobrar $n$ quadruplica o tempo. |
 | $O(n^3)$ | Cúbica | Crescimento muito rápido. Impraticável para entradas grandes. |
 
-A análise teórica fornece a complexidade esperada, mas a análise empírica permite verificar se o comportamento real do algoritmo corresponde à teoria, considerando fatores como cache de CPU, otimizações do compilador e overhead do sistema operacional.
-
 ---
 
 ## 2. Metodologia
 
 ### 2.1 Ambiente de Execução
 
-- **Linguagem:** C++17
-- **Compilador:** g++ com flags `-Wall -O2` (otimização nível 2)
-- **Medição de tempo:** `std::chrono::high_resolution_clock`
-- **Geração de dados:** `std::mt19937` com seeds fixas para reprodutibilidade
+### 2.1 Ambiente de Execução e Coleta
+
+- **Ambiente:** C++17, g++ (flags `-Wall -O2`), `std::chrono::high_resolution_clock`.
+- **Procedimento:** Foram executadas **20 repetições** para cada tamanho $n$, extraindo-se o tempo médio. A geração de dados aleatórios utilizou `std::mt19937` com seeds fixas.
+- **Particularidades:** Na busca, utilizou-se o pior caso (alvo inexistente). Na ordenação, um vetor aleatório novo a cada repetição evitou otimizações irreais em vetores já ordenados.
 
 ### 2.2 Estrutura do Programa
 
 O programa foi organizado de forma modular:
 
+O programa foi organizado de forma altamente modular, permitindo testes de scripts externos sem alteração do código base. A integração visual foi feita através de uma classe de plotagem (`Plotter.hpp`), que utiliza um **Pipe (`popen`)** para injetar dados na memória do Python/Matplotlib, gerando os gráficos automaticamente sem a criação de arquivos intermediários.
+
+```text
+main.cpp                  - Ponto de entrada, orquestração e injeção de testes
+SearchAlgorithms.hpp/cpp  - Algoritmos de busca (namespace Search)
+SortAlgorithms.hpp/cpp    - Algoritmos de ordenação (namespace Sort)
+Benchmark.hpp/cpp         - Motor de benchmark (coleta de tempos)
+Analysis.hpp/cpp          - Ajuste assintótico (namespace Analysis)
+Plotter.hpp               - Geração direta de gráficos via interface C++ → Python
 ```
-main.cpp                  — Ponto de entrada e orquestração
-SearchAlgorithms.hpp/cpp  — Algoritmos de busca (namespace Search)
-SortAlgorithms.h/cpp      — Algoritmos de ordenação (namespace Sort)
-Benchmark.hpp/cpp         — Motor de benchmark (namespace Benchmark)
-Analysis.hpp/cpp          — Ajuste assintótico (namespace Analysis)
-```
 
-### 2.3 Procedimento de Coleta
-
-Para cada algoritmo, o procedimento foi:
-
-1. Gerar vetores de tamanhos crescentes $n$.
-2. Executar o algoritmo **20 repetições** para cada tamanho.
-3. Calcular o **tempo médio** em milissegundos.
-4. Armazenar os pares $(n, \text{tempo\_médio})$.
-
-**Particularidades:**
-
-- **Busca:** vetor ordenado $(1, 2, ..., n)$, alvo $= n + 1$ (pior caso — elemento inexistente).
-- **Ordenação:** vetor aleatório novo a cada repetição (seed = $42 + r$), evitando reutilizar vetores já ordenados.
-
-**Tamanhos de entrada utilizados:**
-
-| Algoritmo | Tamanhos de $n$ |
-|---|---|
-| Busca Sequencial / Binária | 100, 500, 1.000, 5.000, 10.000, 50.000, 100.000 |
-| Bubble Sort | 100, 500, 1.000, 2.000, 5.000, 10.000 |
-| Merge Sort | 1.000, 10.000, 50.000, 100.000, 500.000, 1.000.000, 5.000.000 |
-
-O Merge Sort utiliza tamanhos maiores porque a diferença entre $O(n)$ e $O(n \log n)$ só se manifesta claramente com faixas amplas de $n$.
-
-### 2.4 Método de Ajuste Assintótico
+### 2.3 Método de Ajuste Assintótico
 
 Para determinar qual função assintótica melhor descreve o comportamento observado, utilizou-se o método de **variância residual em escala logarítmica**.
 
@@ -97,7 +80,9 @@ $$\log(tempo) - \log(f(n)) = \log(c)$$
 
 Se $f(n)$ for a função correta, $\log(c)$ deve ser **aproximadamente constante** para todos os valores de $n$. O programa calcula a **variância** desses resíduos para cada função candidata. A candidata com **menor variância** é a que melhor descreve o algoritmo.
 
-**Por que usar logaritmo?** Sem a transformação logarítmica, tempos grandes (ex: 648ms para $n = 5.000.000$) dominariam o cálculo, enquanto tempos pequenos (ex: 0,07ms para $n = 1.000$) seriam ignorados. O logaritmo normaliza as escalas, fazendo todos os pontos contribuírem igualmente para o ajuste.
+```markdown
+Como $c$ é uma constante, a função candidata $f(n)$ correta resultará em resíduos com variância próxima de zero. O logaritmo é essencial para normalizar a escala de grandeza (microssegundos vs. milissegundos), fazendo todos os pontos contribuírem igualmente para o ajuste.
+```
 
 ---
 
@@ -119,31 +104,9 @@ Se $f(n)$ for a função correta, $\log(c)$ deve ser **aproximadamente constante
 | 50.000 | 0,070000 |
 | 100.000 | 0,140000 |
 
-#### Gráfico — Tempo vs Tamanho da Entrada
+#### Gráfico - Tempo vs Tamanho da Entrada
 
-```
-Tempo (ms)
-  0.140 |                                                            *
-         |
-  0.120 |
-         |
-  0.100 |
-         |
-  0.080 |
-         |
-  0.070 |                                              *
-         |
-  0.050 |
-         |
-  0.030 |
-         |
-  0.014 |                              *
-  0.007 |                  *
-  0.001 |      *  *
-  0.000 | *
-        +----+-----+------+-------+--------+-----------+------------+
-         100  500  1000  5000   10000     50000      100000         n
-```
+![Gráfico Busca Sequencial|459](graphs/grafico_Busca_Sequencial.png)
 
 O gráfico mostra crescimento linear: dobrar $n$ aproximadamente dobra o tempo. Isso é consistente com $O(n)$.
 
@@ -177,22 +140,11 @@ O gráfico mostra crescimento linear: dobrar $n$ aproximadamente dobra o tempo. 
 | 50.000 | 0,000040 |
 | 100.000 | 0,000043 |
 
-#### Gráfico — Tempo vs Tamanho da Entrada
+#### Gráfico - Tempo vs Tamanho da Entrada
 
-```
-Tempo (ms)
-  0.000043 |                                                         *
-  0.000040 |                                           *
-  0.000035 |                            *
-  0.000033 |                *
-  0.000028 |        *
-  0.000025 |    *
-  0.000020 | *
-            +----+-----+------+-------+--------+-----------+---------+
-             100  500  1000  5000   10000     50000      100000       n
-```
+![Gráfico Busca Binária|461](graphs/grafico_Busca_Binaria.png)
 
-O tempo cresce muito lentamente — multiplicar $n$ por 1000 (de 100 para 100.000) apenas dobra o tempo. Comportamento típico de $O(\log n)$.
+O tempo cresce muito lentamente. Multiplicar $n$ por 1000 (de 100 para 100.000) apenas dobra o tempo. Comportamento típico de $O(\log n)$.
 
 #### Ajuste Assintótico
 
@@ -223,29 +175,9 @@ O tempo cresce muito lentamente — multiplicar $n$ por 1000 (de 100 para 100.00
 | 5.000 | 47,500 |
 | 10.000 | 190,000 |
 
-#### Gráfico — Tempo vs Tamanho da Entrada
+#### Gráfico - Tempo vs Tamanho da Entrada
 
-```
-Tempo (ms)
-  190.0 |                                                         *
-         |
-  160.0 |
-         |
-  120.0 |
-         |
-   80.0 |
-         |
-   47.5 |                                        *
-         |
-   20.0 |
-         |
-    7.6 |                       *
-    1.9 |            *
-    0.5 |     *
-    0.0 | *
-        +------+--------+--------+--------+-----------+-----------+
-         100   500     1000     2000     5000       10000          n
-```
+![Gráfico Bubble Sort|459](graphs/grafico_Bubble_Sort.png)
 
 O crescimento é claramente quadrático: quando $n$ dobra de 5.000 para 10.000, o tempo quadruplica (de 47,5ms para 190ms). Isso é a assinatura de $O(n^2)$.
 
@@ -279,33 +211,11 @@ O crescimento é claramente quadrático: quando $n$ dobra de 5.000 para 10.000, 
 | 1.000.000 | 118,000 |
 | 5.000.000 | 648,300 |
 
-#### Gráfico — Tempo vs Tamanho da Entrada
+#### Gráfico - Tempo vs Tamanho da Entrada
 
-```
-Tempo (ms)
-  648.3 |                                                         *
-         |
-  500.0 |
-         |
-  400.0 |
-         |
-  300.0 |
-         |
-  200.0 |
-  118.0 |                                              *
-         |
-   55.2 |                                  *
-         |
-    9.5 |                  *
-    4.8 |            *
-    0.9 |     *
-    0.1 | *
-        +------+--------+--------+----------+-----------+---------+
-        1000  10000   50000   100000     500000     1000000   5000000
-                                                                   n
-```
+![Gráfico Merge Sort|457](graphs/grafico_Merge_Sort.png)
 
-O crescimento é ligeiramente acima de linear. Comparando com $O(n)$: se fosse linear, de $n = 1.000.000$ para $n = 5.000.000$ (5x) o tempo deveria ser $5 \times 118 = 590$ms, mas observamos 648ms — o fator extra é o $\log n$.
+O crescimento é ligeiramente acima de linear. Comparando com $O(n)$: se fosse linear, de $n = 1.000.000$ para $n = 5.000.000$ (5x) o tempo deveria ser $5 \times 118 = 590$ms, mas observamos 648ms. O fator extra é o $\log n$.
 
 #### Verificação do Ajuste (exemplo numérico)
 
@@ -341,29 +251,7 @@ log(648,3) - log(5000000) = -8,95
 
 ### 3.5 Resumo Comparativo
 
-```
-Tempo (ms)  — Comparação de crescimento (escala log-log)
-    |
- 1000 +                                                    B
-      |
-  100 +                                         B     M
-      |
-   10 +                              B     M
-      |
-    1 +                    B    M
-      |               M
-  0.1 +          M
-      |     S
- 0.01 +  S
-      |S
-0.001 +
-      +---+------+------+------+------+------+------+---
-        100   500  1000  5000  10000 50000 100000     n
-
-  S = Busca Sequencial    B = Bubble Sort
-  M = Merge Sort
-  (Busca Binária omitida por escala — tempos na ordem de microssegundos)
-```
+![Gráfico Comparativo de Algoritmos|457](graphs/grafico_Comparativo.png)
 
 | Algoritmo | Complexidade Identificada | Complexidade Esperada | Confirmado? |
 |---|---|---|---|
@@ -380,9 +268,9 @@ A análise empírica confirmou as complexidades teóricas de todos os quatro alg
 
 Principais observações:
 
-- A **Busca Binária** é drasticamente mais eficiente que a Busca Sequencial para grandes entradas — para $n = 100.000$, a binária faz ~17 comparações enquanto a sequencial faz até 100.000.
-- O **Merge Sort** é significativamente mais rápido que o Bubble Sort para entradas grandes. Para $n = 10.000$, o Bubble Sort leva ~190ms enquanto o Merge Sort leva ~0,85ms — uma diferença de mais de 200x.
+- A **Busca Binária** é drasticamente mais eficiente que a Busca Sequencial para grandes entradas. Para $n = 100.000$, a binária faz ~17 comparações enquanto a sequencial faz até 100.000.
+- O **Merge Sort** é significativamente mais rápido que o Bubble Sort para entradas grandes. Para $n = 10.000$, o Bubble Sort leva ~190ms enquanto o Merge Sort leva ~0,85ms, uma diferença de mais de 200x.
 - O uso de **escala logarítmica** na análise foi essencial para normalizar as diferenças de magnitude entre tempos pequenos e grandes, permitindo um ajuste justo para todos os pontos de dados.
-- A **reprodutibilidade** foi garantida pelo uso de seeds fixas na geração de dados aleatórios e pela execução de 20 repetições por tamanho de entrada.
+- A **reprodutibilidade e escalabilidade** do ecossistema foram garantidas pelo uso de injeção de dependência na medição dos tempos e na abstração do `Plotter`, permitindo plugar e avaliar novos algoritmos com poucas linhas de código no arquivo principal.
 
 O programa desenvolvido é extensível: novos algoritmos podem ser adicionados seguindo as assinaturas padrão e registrados no pipeline de benchmark com uma única linha de código.
